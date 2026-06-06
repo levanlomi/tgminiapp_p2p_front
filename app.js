@@ -1,65 +1,108 @@
-// Словари локализации (строго по гайдлайну)
+// Словари локализации
 const i18n = {
     ru: {
-        rateLabel: "ТЕКУЩИЙ КУРС P2P BYBIT",
-        rubLabel: "ЗА 1 РУБЛЬ",
-        calcLabel: "Отдаете (RUB):",
-        resultLabel: "Получаете на карту (VND):",
-        refreshBtn: "Обновить курс",
-        refreshing: "Обновляем...",
-        error: "Ошибка сети"
+        headerLabel: "АКТУАЛЬНЫЙ КУРС P2P",
+        subheaderLabel: "Покупка VND за рубли",
+        refreshBtn: "Обновить курсы",
+        refreshing: "Получаем данные...",
+        error: "Ошибка сети",
+        loading: "Загрузка предложений...",
+        ratePrefix: "Курс: "
     }
 };
 
-const currentLang = 'ru'; // В будущем можно брать из tg.initDataUnsafe.user.language_code
+const currentLang = 'ru'; 
 const t = i18n[currentLang];
 
 // Элементы DOM
-const rateValueEl = document.getElementById('rate-value');
-const amountInput = document.getElementById('amount-input');
-const resultValueEl = document.getElementById('result-value');
+const headerLabel = document.getElementById('header-label');
+const subheaderLabel = document.getElementById('subheader-label');
+const tiersContainer = document.getElementById('tiers-container');
 const refreshBtn = document.getElementById('refresh-btn');
 
 // Инициализация Telegram WebApp
 const tg = window.Telegram.WebApp;
-tg.expand(); // Разворачиваем Mini App на всю высоту экрана
+tg.expand();
 tg.ready();
 
-// Глобальная переменная для хранения текущего курса
-let currentRate = 0;
-
 // Применение текстов интерфейса
-document.getElementById('rate-label').textContent = t.rateLabel;
-document.getElementById('rub-label').textContent = t.rubLabel;
-document.getElementById('calc-label').textContent = t.calcLabel;
-document.getElementById('result-label').textContent = t.resultLabel;
+headerLabel.textContent = t.headerLabel;
+subheaderLabel.textContent = t.subheaderLabel;
 refreshBtn.textContent = t.refreshBtn;
 
-// Функция для красивого форматирования вьетнамских донгов (разделение тысяч пробелами)
-function formatVND(number) {
-    return new Intl.NumberFormat('vi-VN').format(Math.floor(number));
+// Форматирование чисел
+function formatNumber(number) {
+    return new Intl.NumberFormat('ru-RU').format(Math.floor(number));
 }
 
-// Запрос к твоему прокси-бэкенду
-async function fetchRate() {
+// Отрисовка карточек с предложениями
+function renderTiers(tiers) {
+    tiersContainer.innerHTML = ''; // Очищаем контейнер
+
+    tiers.forEach(tier => {
+        const card = document.createElement('div');
+        card.className = "tier-card p-4 rounded-2xl flex justify-between items-center shadow-sm";
+        
+        // Левая часть (Рубли)
+        const leftSide = document.createElement('div');
+        leftSide.className = "flex flex-col";
+        
+        const rubTitle = document.createElement('span');
+        rubTitle.className = "text-sm font-semibold";
+        rubTitle.style.color = "var(--hint-color)";
+        rubTitle.textContent = "Отдаете";
+
+        const rubAmount = document.createElement('span');
+        rubAmount.className = "text-xl font-bold";
+        rubAmount.textContent = `${formatNumber(tier.rubAmount)} ₽`;
+        
+        leftSide.appendChild(rubTitle);
+        leftSide.appendChild(rubAmount);
+
+        // Правая часть (Донги и курс)
+        const rightSide = document.createElement('div');
+        rightSide.className = "flex flex-col items-end";
+        
+        const vndAmount = document.createElement('span');
+        vndAmount.className = "text-xl font-extrabold text-green-500";
+        vndAmount.textContent = `${formatNumber(tier.totalVnd)} ₫`;
+
+        const rateInfo = document.createElement('span');
+        rateInfo.className = "text-xs font-medium mt-1";
+        rateInfo.style.color = "var(--hint-color)";
+        rateInfo.textContent = `${t.ratePrefix}${tier.rate}`;
+
+        rightSide.appendChild(vndAmount);
+        rightSide.appendChild(rateInfo);
+
+        card.appendChild(leftSide);
+        card.appendChild(rightSide);
+        
+        tiersContainer.appendChild(card);
+    });
+}
+
+// Запрос к прокси-бэкенду
+async function fetchRates() {
     try {
         refreshBtn.textContent = t.refreshing;
         refreshBtn.disabled = true;
         refreshBtn.style.opacity = '0.5';
+        
+        // Показываем состояние загрузки внутри контейнера
+        tiersContainer.innerHTML = `<div class="text-center p-4 font-medium" style="color: var(--hint-color)">${t.loading}</div>`;
 
-        // Твоя ссылка на Render
+        // Ссылка на твой Render
         const response = await fetch('https://tgminiapp-p2p.onrender.com/api/rate');
         const data = await response.json();
 
-        if (data.success) {
-            currentRate = data.rate;
-            rateValueEl.textContent = currentRate;
-            calculateResult(); // Пересчитываем итог, если в инпуте уже введены цифры
+        if (data.success && data.tiers) {
+            renderTiers(data.tiers);
         } else {
-            rateValueEl.textContent = t.error;
+            tiersContainer.innerHTML = `<div class="text-center p-4 text-red-500 font-bold">${t.error}</div>`;
         }
     } catch (error) {
-        rateValueEl.textContent = t.error;
+        tiersContainer.innerHTML = `<div class="text-center p-4 text-red-500 font-bold">${t.error}</div>`;
         console.error("Fetch API error:", error);
     } finally {
         refreshBtn.textContent = t.refreshBtn;
@@ -68,22 +111,8 @@ async function fetchRate() {
     }
 }
 
-// Логика калькулятора "на лету"
-function calculateResult() {
-    const amount = parseFloat(amountInput.value);
-    
-    if (isNaN(amount) || amount <= 0) {
-        resultValueEl.textContent = "0 VND";
-        return;
-    }
-    
-    const result = amount * currentRate;
-    resultValueEl.textContent = `${formatVND(result)} VND`;
-}
-
 // Слушатели событий
-amountInput.addEventListener('input', calculateResult);
-refreshBtn.addEventListener('click', fetchRate);
+refreshBtn.addEventListener('click', fetchRates);
 
-// Первичная загрузка данных при открытии Mini App
-fetchRate();
+// Первичная загрузка
+fetchRates();

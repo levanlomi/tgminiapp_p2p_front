@@ -6,13 +6,10 @@
     <title>RUB to VND</title>
     
     <link rel="manifest" href="manifest.json">
-    
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <style>
-        /* Привязка цветов к темам Telegram */
         :root {
             --bg-color: var(--tg-theme-bg-color, #ffffff);
             --text-color: var(--tg-theme-text-color, #000000);
@@ -26,14 +23,17 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent; /* Убираем синюю подсветку при тапе на iOS */
+            -webkit-tap-highlight-color: transparent;
         }
         
         .card {
             background-color: var(--secondary-bg-color);
         }
         
-        /* Кнопки: никакого hover, только активное состояние для тапа */
+        .tier-card {
+            background-color: var(--bg-color);
+        }
+
         .tg-button {
             background-color: var(--button-color);
             color: var(--button-text-color);
@@ -43,38 +43,18 @@
         .tg-button:active {
             opacity: 0.7;
         }
-
-        /* Убираем стрелочки у input type="number" */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
-        }
     </style>
 </head>
 <body class="p-4 flex flex-col items-center justify-center min-h-screen">
-    <div id="app" class="w-full max-w-md card rounded-3xl p-6 shadow-sm flex flex-col gap-8">
+    <div id="app" class="w-full max-w-md card rounded-3xl p-6 shadow-sm flex flex-col gap-6">
         
-        <div class="flex flex-col items-center gap-1">
-            <span class="text-sm font-medium" style="color: var(--hint-color)" id="rate-label"></span>
-            <div class="text-4xl font-extrabold flex items-center gap-2 mt-2">
-                <span id="rate-value">...</span> 
-                <span class="text-2xl text-green-500">VND</span>
-            </div>
-            <span class="text-xs mt-1 font-medium tracking-wide uppercase" style="color: var(--hint-color)" id="rub-label"></span>
+        <div class="flex flex-col items-center gap-1 text-center">
+            <span class="text-sm font-medium tracking-wide" style="color: var(--hint-color)" id="header-label"></span>
+            <h1 class="text-xl font-bold mt-1" id="subheader-label"></h1>
         </div>
 
-        <div class="flex flex-col gap-4">
-            <div>
-                <label class="text-sm font-semibold pl-1 mb-2 block" id="calc-label"></label>
-                <input type="number" id="amount-input" class="w-full p-4 rounded-2xl text-xl font-bold bg-white text-black outline-none border-2 border-transparent focus:border-blue-400 transition-colors shadow-inner" placeholder="0" inputmode="decimal">
+        <div id="tiers-container" class="flex flex-col gap-3">
             </div>
-            
-            <div class="p-5 rounded-2xl flex flex-col items-center justify-center" style="background-color: var(--bg-color);">
-                <span class="text-sm font-medium mb-1" style="color: var(--hint-color)" id="result-label"></span>
-                <span class="text-3xl font-black" id="result-value">0 VND</span>
-            </div>
-        </div>
 
         <button id="refresh-btn" class="tg-button w-full py-4 rounded-2xl font-bold text-lg mt-2 shadow-md">
             </button>
