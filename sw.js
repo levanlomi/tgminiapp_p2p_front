@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tma-vnd-v1';
+const CACHE_NAME = 'tma-vnd-v2'; // Изменили версию!
 const ASSETS = [
   './',
   './index.html',
@@ -11,10 +11,27 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(ASSETS))
   );
+  // Заставляем Service Worker сразу обновиться
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cache => {
+          // Удаляем все старые версии кэша, кроме текущей v2
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
-  // Мы НЕ кешируем запросы к нашему API на Render, чтобы данные всегда были свежими
   if (event.request.url.includes('onrender.com')) {
     return;
   }
