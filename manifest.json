@@ -1,6 +1,6 @@
 {
     "name": "RUB to VND P2P",
-    "short_name": "VND Calc",
+    "short_name": "P2P Курс",
     "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#ffffff",
