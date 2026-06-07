@@ -92,3 +92,34 @@ async function fetchRates() {
 
 refreshBtn.addEventListener('click', fetchRates);
 fetchRates();
+
+// ... (начало кода то же самое)
+
+async function fetchRates() {
+    try {
+        refreshBtn.textContent = t.refreshing;
+        refreshBtn.disabled = true;
+        
+        // ВАЖНО: Добавим таймаут, чтобы приложение не висело вечно, если Render спит
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+
+        const response = await fetch('https://tgminiapp-p2p.onrender.com/api/rate', { signal: controller.signal });
+        clearTimeout(timeout);
+        
+        const data = await response.json();
+
+        if (data && data.success && Array.isArray(data.tiers)) {
+            renderTiers(data.tiers);
+            updateTimestamp();
+        } else {
+            throw new Error("Неверный формат данных");
+        }
+    } catch (error) {
+        console.error("Fetch error:", error);
+        tiersContainer.innerHTML = `<div class="text-center p-4 text-red-500 font-bold">Сервер спит, попробуйте снова через минуту</div>`;
+    } finally {
+        refreshBtn.textContent = t.refreshBtn;
+        refreshBtn.disabled = false;
+    }
+}
