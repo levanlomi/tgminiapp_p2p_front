@@ -75,7 +75,14 @@
             <p class="text-xs mt-1" style="color: var(--hint-color)" id="update-time"></p>
         </div>
 
-        <div id="tiers-container" class="flex flex-col gap-3"></div>
+        <div id="loading-overlay" class="hidden flex-col items-center gap-3 py-10">
+    <div class="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+    <p class="text-sm text-center" style="color: var(--hint-color)">
+        Загрузка данных...<br>
+        Это может занять около 15 секунд.
+    </p>
+</div>
+<div id="tiers-container" class="flex flex-col gap-3"></div>
         
         <button id="refresh-btn" class="tg-button w-full py-4 rounded-2xl font-bold text-lg shadow-md"></button>
     </div>

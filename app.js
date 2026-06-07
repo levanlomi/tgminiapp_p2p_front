@@ -6,7 +6,6 @@ const i18n = {
         refreshBtn: "Обновить курсы",
         refreshing: "Обновление...",
         error: "Ошибка сети",
-        loading: "Загрузка...",
         ratePrefix: "Курс: ",
         updatePrefix: "Последнее обновление: "
     }
@@ -20,6 +19,7 @@ const subheaderLabel = document.getElementById('subheader-label');
 const updateTimeEl = document.getElementById('update-time');
 const tiersContainer = document.getElementById('tiers-container');
 const refreshBtn = document.getElementById('refresh-btn');
+const loadingOverlay = document.getElementById('loading-overlay'); // Наш новый лоадер
 
 // Инициализация Telegram WebApp
 const tg = window.Telegram.WebApp;
@@ -49,14 +49,16 @@ function renderTiers(tiers) {
     tiersContainer.innerHTML = '';
     tiers.forEach(tier => {
         const card = document.createElement('div');
-        card.className = "tier-card p-4 rounded-2xl flex justify-between items-center shadow-sm";
+        card.className = "tier-card p-4 rounded-2xl flex justify-between items-center";
         
+        // Здесь мы добавили надписи "Отдаете" и "Получаете"
         card.innerHTML = `
             <div class="flex flex-col">
-                <span class="text-xs font-semibold" style="color: var(--hint-color)">Отдаете</span>
+                <span class="text-xs font-medium" style="color: var(--hint-color)">💳 Отдаете</span>
                 <span class="text-lg font-bold">${formatNumber(tier.rubAmount)} ₽</span>
             </div>
             <div class="flex flex-col items-end">
+                <span class="text-xs font-medium" style="color: var(--hint-color)">💰 Получаете</span>
                 <span class="text-lg font-extrabold text-green-500">${formatNumber(tier.totalVnd)} ₫</span>
                 <span class="text-[10px] font-medium" style="color: var(--hint-color)">${t.ratePrefix}${tier.rate}</span>
             </div>
@@ -70,39 +72,14 @@ async function fetchRates() {
     try {
         refreshBtn.textContent = t.refreshing;
         refreshBtn.disabled = true;
-        tiersContainer.innerHTML = `<div class="text-center p-4 text-sm" style="color: var(--hint-color)">${t.loading}</div>`;
-
-        const response = await fetch('https://tgminiapp-p2p.onrender.com/api/rate');
-        const data = await response.json();
-
-        if (data.success && data.tiers) {
-            renderTiers(data.tiers);
-            updateTimestamp();
-        } else {
-            throw new Error();
-        }
-    } catch (error) {
-        tiersContainer.innerHTML = `<div class="text-center p-4 text-red-500 font-bold">${t.error}</div>`;
-        console.error("Fetch error:", error);
-    } finally {
-        refreshBtn.textContent = t.refreshBtn;
-        refreshBtn.disabled = false;
-    }
-}
-
-refreshBtn.addEventListener('click', fetchRates);
-fetchRates();
-
-// ... (начало кода то же самое)
-
-async function fetchRates() {
-    try {
-        refreshBtn.textContent = t.refreshing;
-        refreshBtn.disabled = true;
         
-        // ВАЖНО: Добавим таймаут, чтобы приложение не висело вечно, если Render спит
+        // Очищаем старые карточки и ПОКАЗЫВАЕМ ЛОАДЕР
+        tiersContainer.innerHTML = '';
+        loadingOverlay.classList.remove('hidden');
+        loadingOverlay.classList.add('flex');
+
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
+        const timeout = setTimeout(() => controller.abort(), 15000); // таймаут 15 секунд
 
         const response = await fetch('https://tgminiapp-p2p.onrender.com/api/rate', { signal: controller.signal });
         clearTimeout(timeout);
@@ -117,9 +94,16 @@ async function fetchRates() {
         }
     } catch (error) {
         console.error("Fetch error:", error);
-        tiersContainer.innerHTML = `<div class="text-center p-4 text-red-500 font-bold">Сервер спит, попробуйте снова через минуту</div>`;
+        tiersContainer.innerHTML = `<div class="text-center p-4 text-red-500 font-bold">Сервер не ответил. Попробуйте обновить.</div>`;
     } finally {
+        // СКРЫВАЕМ ЛОАДЕР, когда запрос завершился (успешно или с ошибкой)
+        loadingOverlay.classList.add('hidden');
+        loadingOverlay.classList.remove('flex');
+        
         refreshBtn.textContent = t.refreshBtn;
         refreshBtn.disabled = false;
     }
 }
+
+refreshBtn.addEventListener('click', fetchRates);
+fetchRates();
